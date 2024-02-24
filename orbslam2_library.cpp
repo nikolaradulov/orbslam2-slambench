@@ -79,6 +79,62 @@ static const std::string default_vocabulary_file = "/deps/orbslam2/Vocabulary/OR
 
 ORB_SLAM2::System* SLAM;
 
+std::string im_file_name;
+std::string default_file="";
+int frames =1;
+bool im_file_initialized = false;
+
+
+void static im_compute_metrics(const cv::Mat image)
+{   
+    cv::Mat current_image;
+
+    // Check if the image has more than one channel and convert to grayscale if so
+    if (image.channels() > 1) {
+        cv::cvtColor(image, current_image, cv::COLOR_BGR2GRAY);
+    } else {
+        current_image = image;
+    }
+
+    /* ---------- Compute Image Quality ------------ */
+    cv::Mat laplacian, absLaplacian;
+
+    // Sharpness: Variance of Laplacian
+    cv::Laplacian(current_image, laplacian, CV_64F);
+    cv::convertScaleAbs(laplacian, absLaplacian);
+    cv::Scalar mu, sigma;
+    cv::meanStdDev(absLaplacian, mu, sigma);
+    double sharpness = sigma.val[0] * sigma.val[0];
+
+    // Brightness: Measure the brightness level
+    double brightness = cv::mean(current_image)[0];
+
+    // Contrast: Standard deviation of pixel intensities
+    cv::meanStdDev(current_image, mu, sigma);
+    double contrast = sigma.val[0];
+    /* --------------------------------------------- */
+   // std::cout << frames<< " " <<sharpness << "  " << brightness << "  " << contrast << std::endl;
+
+    std::ifstream ifile(im_file_name);
+    bool file_exists = ifile.good();
+    ifile.close();
+
+    if (!file_exists || !im_file_initialized) {
+        std::ofstream ofile(im_file_name, std::ofstream::out);
+        im_file_initialized = true;
+        ofile.close();
+    }
+
+    std::ofstream ofile(im_file_name, std::ofstream::out | std::ofstream::app);
+    if (ofile.is_open()) {
+        ofile << frames<< " " << sharpness << " " << brightness << " " << contrast << std::endl;
+        ofile.close();
+    } else {
+        std::cerr << "Failed to open the file for writing." << std::endl;
+    }
+
+}
+
 
 // ===========================================================
 // SLAMBench Sensors
@@ -164,6 +220,7 @@ bool sb_new_slam_configuration(SLAMBenchLibraryHelper * slam_settings) {
 	slam_settings->addParameter(TypedParameter<orbslam_input_mode>("m", "mode",     "select input mode (auto,mono,stereo,rgbd)",    &input_mode, &default_input_mode));
 	slam_settings->addParameter(TypedParameter<std::string>("s", "settings",     "Path to the setting file",    &settings_file, &default_settings_file));
 	slam_settings->addParameter(TypedParameter<std::string>("voc", "vocabulary",     "Path to the vocabulary file",    &vocabulary_file, &default_vocabulary_file));
+	slam_settings->addParameter(TypedParameter<std::string>("img", "image-metrics", "File for image metrics", &im_file_name, &default_file));
 
 	// algo parameters
 	slam_settings->addParameter(TypedParameter<int>("mf", "max-features",     "Maximum number of features",    &max_features, &default_max_features));
@@ -558,14 +615,20 @@ bool sb_update_frame (SLAMBenchLibraryHelper * , slambench::io::SLAMFrame* s) {
 		s->FreeData();			
 	} else if(s->FrameSensor == rgb_sensor and imRGB) {
 		memcpy(imRGB->data, s->GetData(), s->GetSize());
+		 cv::Mat image_rgb = cv::Mat(rgb_sensor->Height, rgb_sensor->Width, CV_8UC3, imRGB->data);
+        im_compute_metrics(image_rgb);
 		rgb_ready = true;		
 		s->FreeData();
 	} else if(s->FrameSensor == grey_sensor_one and img_one) {
 		memcpy(img_one->data, s->GetData(), s->GetSize());
+		 cv::Mat image_grey = cv::Mat(grey_sensor_one->Height, grey_sensor_one->Width, CV_8UC1, img_one->data);
+        im_compute_metrics(image_grey);
 		grey_one_ready = true;
 		s->FreeData();
 	} else if(s->FrameSensor == grey_sensor_two and img_two) {
 		memcpy(img_two->data, s->GetData(), s->GetSize());
+		cv::Mat image_grey = cv::Mat(grey_sensor_two->Height, grey_sensor_two->Width, CV_8UC1, img_two->data);
+        im_compute_metrics(image_grey);
 		grey_two_ready = true;
 		s->FreeData();
 	}
@@ -578,7 +641,8 @@ bool sb_update_frame (SLAMBenchLibraryHelper * , slambench::io::SLAMFrame* s) {
 
 bool sb_process_once (SLAMBenchLibraryHelper * slam_settings)  {
 
-
+	slam_settings->frame_counter++;
+	
 	if (input_mode == orbslam_input_mode::rgbd) {
 
 		depth_ready = false;
