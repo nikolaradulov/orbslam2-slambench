@@ -127,7 +127,7 @@ void static im_compute_metrics(const cv::Mat image)
 
     std::ofstream ofile(im_file_name, std::ofstream::out | std::ofstream::app);
     if (ofile.is_open()) {
-        ofile << frames<< " " << sharpness << " " << brightness << " " << contrast << std::endl;
+        ofile << slam_settings->frame_counter<< " " << sharpness << " " << brightness << " " << contrast << std::endl;
         ofile.close();
     } else {
         std::cerr << "Failed to open the file for writing." << std::endl;
