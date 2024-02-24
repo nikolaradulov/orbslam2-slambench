@@ -218,10 +218,9 @@ cv::Mat M1l,M2l,M1r,M2r;
 bool sb_new_slam_configuration(SLAMBenchLibraryHelper * slam_settings) {
 
 	slam_settings->addParameter(TypedParameter<orbslam_input_mode>("m", "mode",     "select input mode (auto,mono,stereo,rgbd)",    &input_mode, &default_input_mode));
-	slam_settings->addParameter(TypedParameter<std::string>("s", "settings",     "Path to the setting file",    &settings_file, &default_settings_file));
+	slam_settings->addParameter(TypedParameter<std::string>("", "settings",     "Path to the setting file",    &settings_file, &default_settings_file));
 	slam_settings->addParameter(TypedParameter<std::string>("voc", "vocabulary",     "Path to the vocabulary file",    &vocabulary_file, &default_vocabulary_file));
 	slam_settings->addParameter(TypedParameter<std::string>("img", "image-metrics", "File for image metrics", &im_file_name, &default_file));
-
 	// algo parameters
 	slam_settings->addParameter(TypedParameter<int>("mf", "max-features",     "Maximum number of features",    &max_features, &default_max_features));
 	slam_settings->addParameter(TypedParameter<int>("sl", "scale-levels",     "Number of levels in image pyramid",    &pyramid_levels, &default_pyramid_levels));
@@ -642,7 +641,7 @@ bool sb_update_frame (SLAMBenchLibraryHelper * , slambench::io::SLAMFrame* s) {
 bool sb_process_once (SLAMBenchLibraryHelper * slam_settings)  {
 
 	slam_settings->frame_counter++;
-	
+
 	if (input_mode == orbslam_input_mode::rgbd) {
 
 		depth_ready = false;
