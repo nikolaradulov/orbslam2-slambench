@@ -127,7 +127,7 @@ void static im_compute_metrics(const cv::Mat image)
 
     std::ofstream ofile(im_file_name, std::ofstream::out | std::ofstream::app);
     if (ofile.is_open()) {
-        ofile << slam_settings->frame_counter<< " " << sharpness << " " << brightness << " " << contrast << std::endl;
+        ofile <<frames << " " << sharpness << " " << brightness << " " << contrast << std::endl;
         ofile.close();
     } else {
         std::cerr << "Failed to open the file for writing." << std::endl;
@@ -641,7 +641,7 @@ bool sb_update_frame (SLAMBenchLibraryHelper * , slambench::io::SLAMFrame* s) {
 bool sb_process_once (SLAMBenchLibraryHelper * slam_settings)  {
 
 	slam_settings->frame_counter++;
-
+	frames++;
 	if (input_mode == orbslam_input_mode::rgbd) {
 
 		depth_ready = false;
