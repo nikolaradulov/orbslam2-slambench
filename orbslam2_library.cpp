@@ -98,7 +98,8 @@ void static im_compute_metrics(const cv::Mat image)
 
     /* ---------- Compute Image Quality ------------ */
     cv::Mat laplacian, absLaplacian;
-
+	cv::Mat gx, gy, g;
+    cv::Scalar mu, sigma;
     // Sharpness: Variance of Laplacian
      // Sharpness_new
     cv::Sobel(current_image, gx, CV_64F, 1, 0, 3);
